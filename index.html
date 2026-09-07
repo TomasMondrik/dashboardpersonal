@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Agenda Semanal - Dashboard Personal</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            stone: {
+              25: '#fcfbf9',
+              50: '#f8f7f4',
+              100: '#f1eee9',
+              150: '#e7e3dc',
+              200: '#ded9d0',
+              300: '#c5beb1',
+              400: '#9d9484',
+              500: '#786f60',
+              600: '#5c5447',
+              700: '#463f35',
+              800: '#2c2720',
+              900: '#1c1915',
+            },
+            accent: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#4f46e5',
+              600: '#4338ca',
+            },
+            sage: {
+              50: '#f4f7f4',
+              100: '#e3ebe3',
+              500: '#4a7c59',
+              600: '#3b6447',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Warm organic digital planner styling */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f7f5f0;
+      color: #2c2720;
+    }
+
+    /* Custom smooth scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(222, 217, 208, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(157, 148, 132, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(120, 111, 96, 0.6);
+    }
+
+    .planner-card {
+      background: #ffffff;
+      border: 1px solid rgba(212, 206, 196, 0.7);
+      box-shadow: 0 2px 8px -2px rgba(44, 39, 32, 0.04), 0 1px 3px -1px rgba(44, 39, 32, 0.02);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .planner-card-hover:hover {
+      border-color: rgba(180, 172, 158, 0.9);
+      box-shadow: 0 6px 16px -4px rgba(44, 39, 32, 0.08), 0 2px 6px -2px rgba(44, 39, 32, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .task-checkbox:checked + label span {
+      text-decoration: line-through;
+      color: #9d9484;
+    }
+
+    /* Organic pulse dot for sync status */
+    @keyframes pulse-warm {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.88); }
+    }
+    .pulse-dot-warm {
+      animation: pulse-warm 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-full min-h-screen flex flex-col text-stone-800 antialiased selection:bg-stone-200 selection:text-stone-900">
+
+  <div id="app" class="flex-1 flex flex-col max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- HEADER -->
+    <header class="planner-card rounded-2xl p-6 mb-7 flex flex-col lg:flex-row items-center justify-between gap-6">
+      
+      <!-- Title & Sync Status -->
+      <div class="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 shadow-sm">
+            <i data-lucide="calendar-heart" class="w-5 h-5 text-stone-700"></i>
+          </div>
+          <div>
+            <h1 class="font-display text-xl font-bold tracking-tight text-stone-900 flex items-center gap-2.5">
+              Mis Objetivos Semanales
+              <span id="sync-status" class="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot-warm"></span>
+                <span>Sincronizado</span>
+              </span>
+            </h1>
+            <p class="text-xs text-stone-500 font-normal mt-0.5">Planificación estratégica, hábitos y diario personal</p>
+          </div>
+        </div>
+
+        <!-- Mobile Quick Add -->
+        <button onclick="openTaskModal()" class="lg:hidden p-2.5 rounded-xl bg-stone-900 text-stone-50 font-medium flex items-center gap-1 text-xs shadow-sm hover:bg-stone-800 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- WEEK SELECTOR NAV -->
+      <div class="flex items-center gap-1.5 bg-stone-100/90 p-1.5 rounded-xl border border-stone-200/80 shadow-inner">
+        <button onclick="navigateWeek(-1)" class="p-2 rounded-lg hover:bg-white text-stone-600 hover:text-stone-900 transition shadow-none hover:shadow-sm" title="Semana anterior">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button onclick="resetToCurrentWeek()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white hover:bg-stone-50 text-stone-800 transition shadow-sm border border-stone-200/60">
+          Esta Semana
+        </button>
+        <button onclick="navigateWeek(1)" class="p-2 rounded-lg hover:bg-white text-stone-600 hover:text-stone-900 transition shadow-none hover:shadow-sm" title="Semana siguiente">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+        <div class="h-4 w-[1px] bg-stone-300 mx-1"></div>
+        <span id="current-week-range" class="text-xs font-semibold text-stone-700 px-3 min-w-[190px] text-center font-display">
+          Cargando fechas...
+        </span>
+      </div>
+
+      <!-- HEADER ACTION BUTTONS -->
+      <div class="hidden lg:flex items-center gap-3.5">
+        
+        <!-- Progress Counter -->
+        <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-stone-50 border border-stone-200/80">
+          <div class="text-right">
+            <div id="completion-text" class="text-[11px] text-stone-500 font-medium">0/0 Completados</div>
+            <div id="completion-percent" class="text-xs font-bold text-stone-800 font-display">0% Progreso</div>
+          </div>
+          <div class="w-9 h-9 rounded-full bg-white border border-stone-200 flex items-center justify-center relative shadow-sm">
+            <svg class="w-9 h-9 transform -rotate-90">
+              <circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="2.5" class="text-stone-200" fill="transparent" />
+              <circle id="progress-circle" cx="18" cy="18" r="14" stroke="currentColor" stroke-width="2.5" class="text-stone-800 transition-all duration-500 ease-out" fill="transparent" stroke-dasharray="88" stroke-dashoffset="88" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        <button onclick="openAIPlannerModal()" class="px-3.5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-800 border border-stone-300/80 font-semibold flex items-center gap-2 text-xs shadow-sm transition active:scale-[0.98]">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-600"></i>
+          <span>Planear con IA</span>
+        </button>
+
+        <button onclick="openTaskModal()" class="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold flex items-center gap-2 text-xs shadow-md shadow-stone-900/10 transition active:scale-[0.98]">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Nuevo Objetivo</span>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- FILTERS & SEARCH TOOLBAR -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+      
+      <!-- Category Filter Pills -->
+      <div id="category-filters" class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none">
+        <button onclick="setFilter('ALL')" class="filter-btn active px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-stone-900 text-stone-50 border border-stone-900 transition whitespace-nowrap shadow-sm">
+          Todos
+        </button>
+        <button onclick="setFilter('Trabajo')" class="filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap">
+          💼 Trabajo
+        </button>
+        <button onclick="setFilter('Estudio')" class="filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap">
+          📚 Estudio
+        </button>
+        <button onclick="setFilter('Salud')" class="filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap">
+          🏃‍♂️ Salud
+        </button>
+        <button onclick="setFilter('Finanzas')" class="filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap">
+          📈 Finanzas
+        </button>
+        <button onclick="setFilter('Personal')" class="filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap">
+          ✨ Personal
+        </button>
+      </div>
+
+      <!-- Search & High Priority Filter -->
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="relative w-full sm:w-60">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
+          <input type="text" id="search-input" oninput="onSearchInput(this.value)" placeholder="Buscar objetivo..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-300 transition shadow-sm">
+        </div>
+
+        <button onclick="toggleTopThreeHighlight()" id="btn-top3" class="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white border border-stone-200 text-stone-700 hover:border-stone-300 hover:bg-stone-50 flex items-center gap-1.5 transition shrink-0 shadow-sm">
+          <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span>Solo Prioridad Alta</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- MAIN CONTENT GRID (WEEKLY BOARD) -->
+    <main class="flex-1 grid grid-cols-1 md:grid-cols-7 gap-4 mb-8 overflow-x-auto">
+      
+      <!-- LUNES -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="0">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Lunes</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(0)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- MARTES -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="1">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Martes</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(1)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- MIÉRCOLES -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="2">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Miércoles</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(2)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- JUEVES -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="3">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Jueves</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(3)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- VIERNES -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="4">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Viernes</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(4)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- SÁBADO -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="5">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Sábado</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(5)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+      <!-- DOMINGO -->
+      <div class="day-column planner-card rounded-2xl p-3.5 flex flex-col min-h-[520px]" data-day="6">
+        <div class="day-header flex items-center justify-between pb-3 mb-3 border-b border-stone-200 px-1">
+          <div>
+            <div class="text-[11px] font-bold text-stone-400 uppercase tracking-wider font-display">Domingo</div>
+            <div class="day-date text-sm font-bold text-stone-800 font-display">00/00</div>
+          </div>
+          <span class="day-count text-[11px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200/60">0/0</span>
+        </div>
+        <div class="task-list flex-1 space-y-2.5 overflow-y-auto pr-0.5"></div>
+        <button onclick="openTaskModal(6)" class="mt-3 w-full py-2 rounded-xl border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 text-xs font-medium flex items-center justify-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+        </button>
+      </div>
+
+    </main>
+
+    <!-- LOWER PRODUCTIVITY PANELS (Habits & Weekly Notes) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- HABITS TRACKER PANEL -->
+      <div class="planner-card rounded-2xl p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-stone-200">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-700"></i>
+            <h2 class="font-display font-bold text-stone-900 text-sm">Hábitos & Rutinas Recurrentes</h2>
+          </div>
+          <span class="text-xs text-stone-500 font-medium">Registro diario no negociable</span>
+        </div>
+
+        <div id="habit-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- Habits dynamically injected here -->
+        </div>
+      </div>
+
+      <!-- QUICK NOTES / WEEKLY JOURNAL -->
+      <div class="planner-card rounded-2xl p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-3 pb-3 border-b border-stone-200">
+          <div class="flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-stone-700"></i>
+            <h2 class="font-display font-bold text-stone-900 text-sm">Notas & Enfoque Semanal</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="analyzeWeekWithAI()" class="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200/70 text-stone-800 border border-stone-300/60 text-[11px] font-semibold flex items-center gap-1 transition shadow-sm">
+              <i data-lucide="sparkles" class="w-3 h-3 text-amber-600"></i>
+              <span>Diagnóstico IA</span>
+            </button>
+            <span id="notes-saved-indicator" class="text-[11px] text-stone-400 font-medium opacity-0 transition-opacity">Guardado ✓</span>
+          </div>
+        </div>
+        <textarea id="weekly-notes" oninput="onNotesChange()" placeholder="Anotá acá prioridades sueltas, aprendizajes o recordatorios clave para esta semana..." class="w-full flex-1 min-h-[130px] p-3 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:bg-white resize-none transition leading-relaxed"></textarea>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL FOR ADDING / EDITING TASK -->
+  <div id="task-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-200 opacity-0">
+    <div class="planner-card bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 relative transform transition-transform duration-200 scale-95" id="modal-container">
+      
+      <button onclick="closeTaskModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-800 transition p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-stone-100">
+        <div class="w-9 h-9 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center border border-stone-200">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        </div>
+        <h3 id="modal-title" class="font-display text-base font-bold text-stone-900">Nuevo Objetivo</h3>
+      </div>
+
+      <form id="task-form" onsubmit="handleTaskSubmit(event)" class="space-y-4">
+        <input type="hidden" id="task-id">
+        
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-stone-700">Título del objetivo *</label>
+            <button type="button" onclick="enhanceTaskTitleWithAI()" class="text-[11px] text-stone-600 hover:text-stone-900 flex items-center gap-1 transition font-medium">
+              <i data-lucide="wand-2" class="w-3 h-3 text-amber-600"></i> Optimizar con IA
+            </button>
+          </div>
+          <input type="text" id="task-title" required placeholder="Ej: Entregar informe trimestral de ventas" class="w-full px-3.5 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:bg-white transition">
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-stone-700">Detalles / Pasos (opcional)</label>
+            <button type="button" onclick="breakdownTaskDescriptionWithAI()" class="text-[11px] text-stone-600 hover:text-stone-900 flex items-center gap-1 transition font-medium">
+              <i data-lucide="list-checks" class="w-3 h-3 text-indigo-600"></i> Desglosar en pasos
+            </button>
+          </div>
+          <textarea id="task-description" rows="3" placeholder="Agregar contexto, notas o entregables clave..." class="w-full px-3.5 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:bg-white transition resize-none leading-relaxed"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Día asignado</label>
+            <select id="task-day" class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:outline-none focus:border-stone-400 transition">
+              <option value="0">Lunes</option>
+              <option value="1">Martes</option>
+              <option value="2">Miércoles</option>
+              <option value="3">Jueves</option>
+              <option value="4">Viernes</option>
+              <option value="5">Sábado</option>
+              <option value="6">Domingo</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Categoría</label>
+            <select id="task-category" class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:outline-none focus:border-stone-400 transition">
+              <option value="Trabajo">💼 Trabajo</option>
+              <option value="Estudio">📚 Estudio</option>
+              <option value="Salud">🏃‍♂️ Salud</option>
+              <option value="Finanzas">📈 Finanzas</option>
+              <option value="Personal">✨ Personal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Prioridad</label>
+            <select id="task-priority" class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:outline-none focus:border-stone-400 transition">
+              <option value="Baja">🟢 Baja</option>
+              <option value="Media" selected>🟡 Media</option>
+              <option value="Alta">🔴 Alta (Top Prioridad)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Estimación de tiempo</label>
+            <input type="text" id="task-time" placeholder="Ej: 45 min, 2 hs" class="w-full px-3.5 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 transition">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200 mt-5">
+          <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-50 font-bold text-xs shadow-sm transition">
+            Guardar Objetivo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AI WEEKLY PLAN GENERATOR -->
+  <div id="ai-plan-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-200 opacity-0">
+    <div class="planner-card bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-stone-200 relative transform transition-transform duration-200 scale-95" id="ai-plan-container">
+      
+      <button onclick="closeAIPlannerModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-800 transition p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-4 pb-3 border-b border-stone-100">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-display text-base font-bold text-stone-900">Planificar Semana con Gemini IA</h3>
+          <p class="text-xs text-stone-500">Definí tus objetivos clave y la IA estructurará tus 7 días</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleAIPlanGeneration(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1.5">¿Qué metas querés encarar esta semana?</label>
+          <textarea id="ai-plan-prompt" rows="3" required placeholder="Ej: Quiero avanzar con el rediseño del portfolio, entrenar 4 días de fuerza, estudiar 2 horas de backend y revisar mi presupuesto mensual..." class="w-full p-3 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:bg-white transition resize-none leading-relaxed"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Modo de integración</label>
+            <select id="ai-plan-mode" class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:outline-none focus:border-stone-400 transition">
+              <option value="append">Sumar a mis objetivos actuales</option>
+              <option value="replace">Reemplazar semana completa</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">Ritmo de carga</label>
+            <select id="ai-plan-style" class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:outline-none focus:border-stone-400 transition">
+              <option value="balanced">Equilibrado y sostenible</option>
+              <option value="intense">Sprint de alta intensidad</option>
+              <option value="light">Ritmo liviano / Enfocado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-stone-50 border border-stone-200/80 rounded-xl text-[11px] text-stone-600 flex items-center gap-2">
+          <i data-lucide="info" class="w-4 h-4 text-stone-500 shrink-0"></i>
+          <span>La IA distribuirá tareas en formato estructurado de Lunes a Domingo con categorías y tiempos sugeridos.</span>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-200 mt-4">
+          <button type="button" onclick="closeAIPlannerModal()" class="px-4 py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition">
+            Cancelar
+          </button>
+          <button type="submit" id="ai-generate-btn" class="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-50 font-bold text-xs shadow-sm transition flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span id="ai-generate-btn-text">Generar Plan Táctico</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AI WEEKLY ANALYSIS -->
+  <div id="ai-analysis-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-200 opacity-0">
+    <div class="planner-card bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 relative transform transition-transform duration-200 scale-95 max-h-[85vh] flex flex-col" id="ai-analysis-container">
+      
+      <button onclick="closeAIAnalysisModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-800 transition p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-4 pb-3 border-b border-stone-100 shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-800 border border-stone-200 flex items-center justify-center">
+          <i data-lucide="compass" class="w-5 h-5 text-stone-700"></i>
+        </div>
+        <div>
+          <h3 class="font-display text-base font-bold text-stone-900">Diagnóstico Semanal</h3>
+          <p class="text-xs text-stone-500">Análisis táctico de balance, sobrecarga y recomendaciones</p>
+        </div>
+      </div>
+
+      <div id="ai-analysis-content" class="flex-1 overflow-y-auto pr-2 space-y-4 text-xs text-stone-700 leading-relaxed">
+        <!-- AI content injected here -->
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-stone-200 mt-4 shrink-0">
+        <span class="text-[11px] text-stone-400 font-medium">Impulsado por Gemini 3 Flash</span>
+        <button onclick="closeAIAnalysisModal()" class="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-50 font-bold text-xs transition">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Firebase Scripts & Core Application Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global App State
+    let db, auth, currentUser = null;
+    let currentWeekStartDate = getMonday(new Date());
+    let tasks = [];
+    let habits = [];
+    let currentCategoryFilter = 'ALL';
+    let searchQuery = '';
+    let showHighPriorityOnly = false;
+    let notesTimeout = null;
+
+    // Default habits template
+    const DEFAULT_HABITS = [
+      { id: 'h1', title: 'Entrenamiento de fuerza / Movilidad', category: 'Salud', icon: 'dumbbell', completedDays: [false, false, false, false, false, false, false] },
+      { id: 'h2', title: 'Lectura o estudio enfocado (30 min)', category: 'Estudio', icon: 'book-open', completedDays: [false, false, false, false, false, false, false] },
+      { id: 'h3', title: 'Revisión de finanzas & mercado', category: 'Finanzas', icon: 'trending-up', completedDays: [false, false, false, false, false, false, false] },
+      { id: 'h4', title: 'Planificación y cierre del día', category: 'Personal', icon: 'check-circle-2', completedDays: [false, false, false, false, false, false, false] }
+    ];
+
+    function getMonday(d) {
+      d = new Date(d);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      monday.setHours(0,0,0,0);
+      return monday;
+    }
+
+    function formatWeekRangeKey(mondayDate) {
+      const year = mondayDate.getFullYear();
+      const month = String(mondayDate.getMonth() + 1).padStart(2, '0');
+      const day = String(mondayDate.getDate()).padStart(2, '0');
+      return `${year}-W${month}-${day}`;
+    }
+
+    async function initFirebase() {
+      try {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+          ? JSON.parse(__firebase_config) 
+          : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            updateSyncBadge('online');
+            subscribeToWeekData();
+            subscribeToHabits();
+          }
+        });
+
+      } catch (err) {
+        console.warn("Firebase fall back to local mode:", err);
+        updateSyncBadge('local');
+        loadLocalDemoData();
+      }
+    }
+
+    function updateSyncBadge(status) {
+      const badge = document.getElementById('sync-status');
+      if (!badge) return;
+      if (status === 'online') {
+        badge.className = 'inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80';
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot-warm"></span><span>Sincronizado</span>`;
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80';
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Modo Local</span>`;
+      }
+    }
+
+    function subscribeToWeekData() {
+      if (!currentUser || !db) return;
+      
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
+      const weekKey = formatWeekRangeKey(currentWeekStartDate);
+      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'weeks', weekKey);
+
+      onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          tasks = data.tasks || [];
+          document.getElementById('weekly-notes').value = data.notes || '';
+        } else {
+          tasks = getDemoSeedTasks();
+          saveWeekToDatabase();
+        }
+        renderBoard();
+      }, (error) => {
+        console.error("Firestore error:", error);
+      });
+    }
+
+    function subscribeToHabits() {
+      if (!currentUser || !db) return;
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
+      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'habits');
+
+      onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          habits = docSnap.data().list || DEFAULT_HABITS;
+        } else {
+          habits = DEFAULT_HABITS;
+          setDoc(docRef, { list: habits });
+        }
+        renderHabits();
+      }, (error) => {
+        console.error("Habits firestore error:", error);
+      });
+    }
+
+    async function saveWeekToDatabase() {
+      if (!currentUser || !db) return;
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
+      const weekKey = formatWeekRangeKey(currentWeekStartDate);
+      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'weeks', weekKey);
+      
+      const notes = document.getElementById('weekly-notes').value;
+
+      try {
+        await setDoc(docRef, {
+          updatedAt: new Date().toISOString(),
+          tasks: tasks,
+          notes: notes
+        }, { merge: true });
+      } catch (err) {
+        showToast("Error al conectar con la base de datos", "error");
+      }
+    }
+
+    async function saveHabitsToDatabase() {
+      if (!currentUser || !db) return;
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
+      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'habits');
+      try {
+        await setDoc(docRef, { list: habits });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function getDemoSeedTasks() {
+      return [
+        {
+          id: 't1',
+          title: 'Definir arquitectura y layout del sitio',
+          description: 'Revisar requerimientos de usuario y esquema visual',
+          day: 0,
+          category: 'Trabajo',
+          priority: 'Alta',
+          time: '2 hs',
+          completed: true
+        },
+        {
+          id: 't2',
+          title: 'Sesión de entrenamiento de fuerza',
+          description: 'Bloque principal + estiramientos',
+          day: 0,
+          category: 'Salud',
+          priority: 'Media',
+          time: '1 h',
+          completed: false
+        },
+        {
+          id: 't3',
+          title: 'Revisión y balance financiero',
+          description: 'Analizar rendimientos e inversiones del mes',
+          day: 1,
+          category: 'Finanzas',
+          priority: 'Alta',
+          time: '1.5 hs',
+          completed: false
+        },
+        {
+          id: 't4',
+          title: 'Estudio de documentación técnica',
+          description: 'Explorar mejores prácticas y optimización',
+          day: 2,
+          category: 'Estudio',
+          priority: 'Media',
+          time: '1 h',
+          completed: false
+        },
+        {
+          id: 't5',
+          title: 'Planificación de la siguiente semana',
+          description: 'Organizar objetivos clave y agenda personal',
+          day: 6,
+          category: 'Personal',
+          priority: 'Baja',
+          time: '30 min',
+          completed: false
+        }
+      ];
+    }
+
+    function loadLocalDemoData() {
+      tasks = getDemoSeedTasks();
+      habits = DEFAULT_HABITS;
+      renderBoard();
+      renderHabits();
+    }
+
+    window.renderBoard = function() {
+      updateWeekHeaderUI();
+
+      const dayColumns = document.querySelectorAll('.day-column');
+      let totalTasks = 0;
+      let completedTasks = 0;
+
+      dayColumns.forEach(column => {
+        const dayIndex = parseInt(column.getAttribute('data-day'));
+        const listEl = column.querySelector('.task-list');
+        listEl.innerHTML = '';
+
+        const colDate = new Date(currentWeekStartDate);
+        colDate.setDate(colDate.getDate() + dayIndex);
+        
+        const isToday = isSameDay(colDate, new Date());
+        
+        const dateStr = `${String(colDate.getDate()).padStart(2, '0')}/${String(colDate.getMonth() + 1).padStart(2, '0')}`;
+        const dateEl = column.querySelector('.day-date');
+        if (dateEl) dateEl.textContent = dateStr;
+
+        const dayNameEl = column.querySelector('.uppercase');
+
+        if (isToday) {
+          column.classList.add('ring-2', 'ring-stone-400/80', 'bg-stone-50/60');
+          if (dayNameEl && !dayNameEl.querySelector('.today-tag')) {
+            const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            dayNameEl.innerHTML = `${dayNames[dayIndex]} <span class="today-tag text-[9px] bg-stone-900 text-stone-50 font-bold px-1.5 py-0.2 rounded ml-1">HOY</span>`;
+          }
+        } else {
+          column.classList.remove('ring-2', 'ring-stone-400/80', 'bg-stone-50/60');
+        }
+
+        const dayTasks = tasks.filter(t => {
+          if (t.day !== dayIndex) return false;
+          if (currentCategoryFilter !== 'ALL' && t.category !== currentCategoryFilter) return false;
+          if (showHighPriorityOnly && t.priority !== 'Alta') return false;
+          if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+          return true;
+        });
+
+        const dayCompletedCount = tasks.filter(t => t.day === dayIndex && t.completed).length;
+        const dayTotalCount = tasks.filter(t => t.day === dayIndex).length;
+        const countEl = column.querySelector('.day-count');
+        if (countEl) countEl.textContent = `${dayCompletedCount}/${dayTotalCount}`;
+
+        totalTasks += dayTotalCount;
+        completedTasks += dayCompletedCount;
+
+        if (dayTasks.length === 0) {
+          listEl.innerHTML = `
+            <div class="h-24 flex flex-col items-center justify-center text-center p-3 border border-dashed border-stone-200/90 rounded-xl text-stone-400">
+              <span class="text-xs font-medium">Sin objetivos</span>
+            </div>
+          `;
+        } else {
+          dayTasks.forEach(task => {
+            listEl.appendChild(createTaskCardElement(task));
+          });
+        }
+      });
+
+      updateGlobalMetricsUI(completedTasks, totalTasks);
+      
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    };
+
+    function isSameDay(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    }
+
+    function createTaskCardElement(task) {
+      const card = document.createElement('div');
+      
+      const priorityStripes = {
+        'Alta': 'border-l-rose-500 bg-rose-50/20',
+        'Media': 'border-l-amber-500 bg-amber-50/20',
+        'Baja': 'border-l-emerald-500 bg-emerald-50/20'
+      };
+
+      const categoryBadges = {
+        'Trabajo': '💼 Trabajo',
+        'Estudio': '📚 Estudio',
+        'Salud': '🏃‍♂️ Salud',
+        'Finanzas': '📈 Finanzas',
+        'Personal': '✨ Personal'
+      };
+
+      card.className = `planner-card p-3 rounded-xl border border-stone-200/90 border-l-4 ${priorityStripes[task.priority] || 'border-l-stone-400'} hover:border-stone-300 transition group relative`;
+      
+      card.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete('${task.id}')" class="task-checkbox mt-0.5 w-4 h-4 rounded border-stone-300 text-stone-900 focus:ring-stone-400 bg-white cursor-pointer">
+          
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1 mb-1">
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 border border-stone-200/70">
+                ${categoryBadges[task.category] || task.category}
+              </span>
+              ${task.time ? `<span class="text-[10px] text-stone-400 font-medium flex items-center gap-0.5"><i data-lucide="clock" class="w-3 h-3"></i>${task.time}</span>` : ''}
+            </div>
+
+            <p class="text-xs font-semibold text-stone-800 leading-snug break-words ${task.completed ? 'line-through text-stone-400 font-normal' : ''}">
+              ${escapeHtml(task.title)}
+            </p>
+
+            ${task.description ? `<p class="text-[11px] text-stone-500 mt-1 line-clamp-2 leading-relaxed ${task.completed ? 'line-through text-stone-300' : ''}">${escapeHtml(task.description)}</p>` : ''}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-1 mt-2.5 pt-2 border-t border-stone-100 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="editTask('${task.id}')" class="p-1 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition" title="Editar">
+            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="deleteTask('${task.id}')" class="p-1 rounded-md hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition" title="Eliminar">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function updateWeekHeaderUI() {
+      const endWeek = new Date(currentWeekStartDate);
+      endWeek.setDate(endWeek.getDate() + 6);
+
+      const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      
+      const startStr = `${currentWeekStartDate.getDate()} ${months[currentWeekStartDate.getMonth()]}`;
+      const endStr = `${endWeek.getDate()} ${months[endWeek.getMonth()]}, ${endWeek.getFullYear()}`;
+
+      document.getElementById('current-week-range').textContent = `${startStr} - ${endStr}`;
+    }
+
+    function updateGlobalMetricsUI(completed, total) {
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+      
+      document.getElementById('completion-text').textContent = `${completed}/${total} Completados`;
+      document.getElementById('completion-percent').textContent = `${percent}% Progreso`;
+
+      const circle = document.getElementById('progress-circle');
+      if (circle) {
+        const offset = 88 - (88 * (percent / 100));
+        circle.setAttribute('stroke-dashoffset', offset);
+      }
+    }
+
+    function renderHabits() {
+      const habitContainer = document.getElementById('habit-list');
+      if (!habitContainer) return;
+      habitContainer.innerHTML = '';
+
+      const daysShort = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+      habits.forEach((habit, hIdx) => {
+        const habitCard = document.createElement('div');
+        habitCard.className = 'planner-card p-3 rounded-xl border border-stone-200/80 flex flex-col justify-between gap-2.5';
+
+        let daysHtml = '';
+        daysShort.forEach((dName, dIdx) => {
+          const isDone = habit.completedDays && habit.completedDays[dIdx];
+          daysHtml += `
+            <button onclick="toggleHabitDay(${hIdx}, ${dIdx})" class="w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center transition ${isDone ? 'bg-stone-900 text-stone-50 shadow-xs' : 'bg-stone-100 border border-stone-200 text-stone-400 hover:text-stone-800'}">
+              ${dName}
+            </button>
+          `;
+        });
+
+        habitCard.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-stone-800 truncate">${escapeHtml(habit.title)}</span>
+            <span class="text-[10px] text-stone-500 font-medium px-2 py-0.5 rounded bg-stone-100">${habit.category}</span>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-1">
+            ${daysHtml}
+          </div>
+        `;
+
+        habitContainer.appendChild(habitCard);
+      });
+    }
+
+    window.toggleHabitDay = function(habitIndex, dayIndex) {
+      if (!habits[habitIndex].completedDays) {
+        habits[habitIndex].completedDays = [false, false, false, false, false, false, false];
+      }
+      habits[habitIndex].completedDays[dayIndex] = !habits[habitIndex].completedDays[dayIndex];
+      renderHabits();
+      saveHabitsToDatabase();
+      showToast("Hábito actualizado", "success");
+    };
+
+    window.toggleTaskComplete = function(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = !task.completed;
+        renderBoard();
+        saveWeekToDatabase();
+        showToast(task.completed ? "¡Objetivo cumplido! 🎉" : "Objetivo pendiente", "info");
+      }
+    };
+
+    window.openTaskModal = function(dayIndex = 0, taskId = null) {
+      const modal = document.getElementById('task-modal');
+      const container = document.getElementById('modal-container');
+      const form = document.getElementById('task-form');
+
+      form.reset();
+      document.getElementById('task-id').value = '';
+      document.getElementById('task-day').value = dayIndex;
+
+      if (taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          document.getElementById('modal-title').textContent = 'Editar Objetivo';
+          document.getElementById('task-id').value = task.id;
+          document.getElementById('task-title').value = task.title;
+          document.getElementById('task-description').value = task.description || '';
+          document.getElementById('task-day').value = task.day;
+          document.getElementById('task-category').value = task.category;
+          document.getElementById('task-priority').value = task.priority;
+          document.getElementById('task-time').value = task.time || '';
+        }
+      } else {
+        document.getElementById('modal-title').textContent = 'Nuevo Objetivo';
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        container.classList.remove('scale-95');
+      }, 10);
+    };
+
+    window.closeTaskModal = function() {
+      const modal = document.getElementById('task-modal');
+      const container = document.getElementById('modal-container');
+
+      modal.classList.add('opacity-0');
+      container.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    };
+
+    window.handleTaskSubmit = function(e) {
+      e.preventDefault();
+
+      const taskId = document.getElementById('task-id').value;
+      const title = document.getElementById('task-title').value.trim();
+      const description = document.getElementById('task-description').value.trim();
+      const day = parseInt(document.getElementById('task-day').value);
+      const category = document.getElementById('task-category').value;
+      const priority = document.getElementById('task-priority').value;
+      const time = document.getElementById('task-time').value.trim();
+
+      if (!title) return;
+
+      if (taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          task.title = title;
+          task.description = description;
+          task.day = day;
+          task.category = category;
+          task.priority = priority;
+          task.time = time;
+        }
+        showToast("Objetivo actualizado", "success");
+      } else {
+        const newTask = {
+          id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          title,
+          description,
+          day,
+          category,
+          priority,
+          time,
+          completed: false
+        };
+        tasks.push(newTask);
+        showToast("Objetivo guardado con éxito", "success");
+      }
+
+      closeTaskModal();
+      renderBoard();
+      saveWeekToDatabase();
+    };
+
+    window.editTask = function(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        openTaskModal(task.day, taskId);
+      }
+    };
+
+    window.deleteTask = function(taskId) {
+      tasks = tasks.filter(t => t.id !== taskId);
+      renderBoard();
+      saveWeekToDatabase();
+      showToast("Objetivo eliminado", "info");
+    };
+
+    window.navigateWeek = function(offset) {
+      currentWeekStartDate.setDate(currentWeekStartDate.getDate() + (offset * 7));
+      subscribeToWeekData();
+      showToast(`Cargando semana...`, "info");
+    };
+
+    window.resetToCurrentWeek = function() {
+      currentWeekStartDate = getMonday(new Date());
+      subscribeToWeekData();
+      showToast("Volviendo a la semana actual", "info");
+    };
+
+    window.setFilter = function(category) {
+      currentCategoryFilter = category;
+      
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.className = 'filter-btn px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:text-stone-900 transition whitespace-nowrap';
+      });
+
+      event.currentTarget.className = 'filter-btn active px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-stone-900 text-stone-50 border border-stone-900 transition whitespace-nowrap shadow-sm';
+      
+      renderBoard();
+    };
+
+    window.onSearchInput = function(val) {
+      searchQuery = val;
+      renderBoard();
+    };
+
+    window.toggleTopThreeHighlight = function() {
+      showHighPriorityOnly = !showHighPriorityOnly;
+      const btn = document.getElementById('btn-top3');
+      if (showHighPriorityOnly) {
+        btn.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-900');
+      } else {
+        btn.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-900');
+      }
+      renderBoard();
+    };
+
+    window.onNotesChange = function() {
+      const indicator = document.getElementById('notes-saved-indicator');
+      indicator.style.opacity = '0';
+
+      clearTimeout(notesTimeout);
+      notesTimeout = setTimeout(() => {
+        saveWeekToDatabase();
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+          indicator.style.opacity = '0';
+        }, 2000);
+      }, 800);
+    };
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      
+      const colors = {
+        'success': 'bg-stone-900 text-stone-50 border-stone-800',
+        'error': 'bg-rose-900 text-rose-50 border-rose-800',
+        'info': 'bg-white text-stone-800 border-stone-300'
+      };
+
+      const icons = {
+        'success': 'check-circle-2',
+        'error': 'alert-circle',
+        'info': 'info'
+      };
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border ${colors[type] || colors.info} shadow-lg text-xs font-medium transform transition-all duration-300 translate-y-4 opacity-0`;
+      
+      toast.innerHTML = `
+        <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i>
+        <span>${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+      if (window.lucide) lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+
+    const GEMINI_MODEL = "gemini-3-flash-preview";
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=`;
+
+    async function callGeminiAPI(payload, retries = 3, backoff = 1000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(GEMINI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            return await response.json();
+          }
+
+          if (response.status === 429 || response.status >= 500) {
+            await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+            continue;
+          }
+
+          const errText = await response.text();
+          throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+        } catch (err) {
+          if (i === retries - 1) throw err;
+          await new Promise(r => setTimeout(r, backoff * Math.pow(2, i)));
+        }
+      }
+    }
+
+    window.openAIPlannerModal = function() {
+      const modal = document.getElementById('ai-plan-modal');
+      const container = document.getElementById('ai-plan-container');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        container.classList.remove('scale-95');
+      }, 10);
+    };
+
+    window.closeAIPlannerModal = function() {
+      const modal = document.getElementById('ai-plan-modal');
+      const container = document.getElementById('ai-plan-container');
+      modal.classList.add('opacity-0');
+      container.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    };
+
+    window.openAIAnalysisModal = function() {
+      const modal = document.getElementById('ai-analysis-modal');
+      const container = document.getElementById('ai-analysis-container');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        container.classList.remove('scale-95');
+      }, 10);
+    };
+
+    window.closeAIAnalysisModal = function() {
+      const modal = document.getElementById('ai-analysis-modal');
+      const container = document.getElementById('ai-analysis-container');
+      modal.classList.add('opacity-0');
+      container.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    };
+
+    window.handleAIPlanGeneration = async function(e) {
+      e.preventDefault();
+      const prompt = document.getElementById('ai-plan-prompt').value.trim();
+      const mode = document.getElementById('ai-plan-mode').value;
+      const style = document.getElementById('ai-plan-style').value;
+      const btn = document.getElementById('ai-generate-btn');
+      const btnText = document.getElementById('ai-generate-btn-text');
+
+      if (!prompt) return;
+
+      btn.disabled = true;
+      btnText.textContent = "Planificando con IA...";
+
+      const systemInstructionText = `Sos un experto consultor de productividad personal y diseño de rutinas semanales.
+Tu objetivo es estructurar los requerimientos del usuario en una lista de objetivos diarios para los 7 días de la semana (0 es Lunes, 1 es Martes, ..., 6 es Domingo).
+Estilo: ${style}.
+Asigna categorías válidas: Trabajo, Estudio, Salud, Finanzas, Personal. Prioridades: Baja, Media, Alta. Tiempos estimados realistas (ej: "45 min", "1.5 hs").`;
+
+      const payload = {
+        contents: [{ parts: [{ text: `Metas para esta semana: "${prompt}"` }] }],
+        systemInstruction: { parts: [{ text: systemInstructionText }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                description: { type: "STRING" },
+                day: { type: "INTEGER", description: "0 para Lunes, 1 para Martes, ..., 6 para Domingo" },
+                category: { type: "STRING", enum: ["Trabajo", "Estudio", "Salud", "Finanzas", "Personal"] },
+                priority: { type: "STRING", enum: ["Baja", "Media", "Alta"] },
+                time: { type: "STRING" }
+              },
+              required: ["title", "day", "category", "priority"]
+            }
+          }
+        }
+      };
+
+      try {
+        const result = await callGeminiAPI(payload);
+        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!jsonText) throw new Error("Sin respuesta estructurada.");
+
+        const generatedTasks = JSON.parse(jsonText);
+
+        const formattedNewTasks = generatedTasks.map((gt, idx) => ({
+          id: 'task_ai_' + Date.now() + '_' + idx,
+          title: gt.title,
+          description: gt.description || '',
+          day: Math.min(Math.max(gt.day, 0), 6),
+          category: gt.category || 'Personal',
+          priority: gt.priority || 'Media',
+          time: gt.time || '30 min',
+          completed: false
+        }));
+
+        if (mode === 'replace') {
+          tasks = formattedNewTasks;
+        } else {
+          tasks = [...tasks, ...formattedNewTasks];
+        }
+
+        renderBoard();
+        saveWeekToDatabase();
+        closeAIPlannerModal();
+        showToast(`✨ ¡Plan generado! (${formattedNewTasks.length} tareas asignadas)`, "success");
+
+      } catch (err) {
+        console.error("AI Plan Generation Error:", err);
+        showToast("No se pudo generar el plan. Reintentá.", "error");
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "Generar Plan Táctico";
+      }
+    };
+
+    window.analyzeWeekWithAI = async function() {
+      openAIAnalysisModal();
+      const container = document.getElementById('ai-analysis-content');
+      container.innerHTML = `
+        <div class="py-12 flex flex-col items-center justify-center text-center space-y-3">
+          <div class="w-8 h-8 border-2 border-stone-800 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs text-stone-500 font-medium animate-pulse">Analizando carga de trabajo, hábitos y balance de la semana...</p>
+        </div>
+      `;
+
+      const taskSummary = tasks.map(t => `- [${t.completed ? 'HECHO' : 'PENDIENTE'}] Día ${t.day} (${t.category}, Prioridad ${t.priority}): "${t.title}" ${t.time ? '('+t.time+')' : ''}`).join('\n');
+      const habitSummary = habits.map(h => `- Hábito "${h.title}" (${h.category})`).join('\n');
+      const userNotes = document.getElementById('weekly-notes').value;
+
+      const systemPrompt = `Sos un mentor de organización y productividad personal. Analiza la semana del usuario y genera un informe breve en HTML limpio y legible (con <p>, <ul>, <li>, <strong>, <span> y clases Tailwind sutiles en tonos oscuros/neutros).
+Estructura de respuesta:
+1. 📊 Puntaje & Diagnóstico general
+2. ⚠️ Puntos de atención (balance de áreas o carga de días)
+3. 🎯 3 Consejos breves de ejecución`;
+
+      const userQuery = `Semana actual:
+TAREAS:
+${taskSummary || 'Sin tareas cargadas.'}
+
+HÁBITOS:
+${habitSummary || 'Sin hábitos registrados.'}
+
+NOTAS DEL USUARIO:
+"${userNotes || 'Sin notas.'}"`;
+
+      try {
+        const result = await callGeminiAPI({
+          contents: [{ parts: [{ text: userQuery }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        });
+
+        const analysisText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!analysisText) throw new Error("Sin respuesta.");
+
+        container.innerHTML = `<div class="prose prose-stone max-w-none text-xs space-y-3">${analysisText}</div>`;
+        if (window.lucide) lucide.createIcons();
+
+      } catch (err) {
+        console.error("AI Analysis Error:", err);
+        container.innerHTML = `
+          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs">
+            No pudimos realizar el diagnóstico en este momento. Por favor reintentá en unos segundos.
+          </div>
+        `;
+      }
+    };
+
+    window.enhanceTaskTitleWithAI = async function() {
+      const inputEl = document.getElementById('task-title');
+      const currentVal = inputEl.value.trim();
+      if (!currentVal) {
+        showToast("Escribí un borrador de título primero", "info");
+        return;
+      }
+
+      showToast("Optimizando título con IA...", "info");
+
+      const systemPrompt = "Convierte el título o idea del usuario en un objetivo conciso y enfocado a la acción en español (máximo 10 palabras). Responde ÚNICAMENTE con la frase mejorada, sin comillas.";
+      
+      try {
+        const result = await callGeminiAPI({
+          contents: [{ parts: [{ text: currentVal }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        });
+
+        const enhanced = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (enhanced) {
+          inputEl.value = enhanced;
+          showToast("Título optimizado", "success");
+        }
+      } catch (err) {
+        showToast("No se pudo optimizar el título", "error");
+      }
+    };
+
+    window.breakdownTaskDescriptionWithAI = async function() {
+      const title = document.getElementById('task-title').value.trim();
+      const descEl = document.getElementById('task-description');
+      
+      if (!title) {
+        showToast("Ingresá un título para desglosar", "info");
+        return;
+      }
+
+      showToast("Desglosando en pasos...", "info");
+
+      const systemPrompt = "Desglosa la meta del usuario en 3 a 5 pasos concretos y secuenciales con estimación de tiempo. Responde con texto plano limpio con viñetas.";
+
+      try {
+        const result = await callGeminiAPI({
+          contents: [{ parts: [{ text: `Meta: "${title}". Notas: "${descEl.value}"` }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        });
+
+        const breakdown = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (breakdown) {
+          descEl.value = (descEl.value ? descEl.value + "\n\nPasos clave:\n" : "Pasos clave:\n") + breakdown;
+          showToast("Pasos agregados al objetivo", "success");
+        }
+      } catch (err) {
+        showToast("Error al desglosar el objetivo", "error");
+      }
+    };
+
+  </script>
+</body>
+</html>

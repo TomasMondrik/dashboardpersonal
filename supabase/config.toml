@@ -1,4 +1,0 @@
-project_id = "osluwuxlgbputhbdxoaj"
-
-[functions.gemini]
-verify_jwt = true

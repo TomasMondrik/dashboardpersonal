@@ -562,15 +562,63 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- Firebase Scripts & Core Application Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://osluwuxlgbputhbdxoaj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbHV3dXhsZ2JwdXRoYmR4b2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNDkyMjMsImV4cCI6MjEwMjgyNTIyM30.neCSnj_8l-PksZ7sYsxdxgEWsV6d1bduGrZzxltAnvQ';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+    window.supabaseClient = supabaseClient;
 
+    async function addTask(weekId, day, text, category = 'General', priority = 'Media') {
+      const { data, error } = await supabaseClient
+        .from('dashboard_tasks')
+        .insert([{ week_id: weekId, day, text, category, priority, completed: false }])
+        .select();
+
+      if (error) throw error;
+      return data;
+    }
+
+    async function getWeekTasks(weekId) {
+      const { data: tasks, error } = await supabaseClient
+        .from('dashboard_tasks')
+        .select('*')
+        .eq('week_id', weekId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error al cargar:', error);
+        return [];
+      }
+      return tasks;
+    }
+
+    async function toggleTaskStatus(taskId, isCompleted) {
+      const { error } = await supabaseClient
+        .from('dashboard_tasks')
+        .update({ completed: isCompleted })
+        .eq('id', taskId);
+
+      if (error) throw error;
+    }
+
+    async function deleteSupabaseTask(taskId) {
+      const { error } = await supabaseClient
+        .from('dashboard_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+    }
+  </script>
+
+  <!-- Core Application Logic -->
+  <script type="module">
     // Global App State
-    let db, auth, currentUser = null;
     let currentWeekStartDate = getMonday(new Date());
+    let currentWeekId = '';
     let tasks = [];
     let habits = [];
     let currentCategoryFilter = 'ALL';
@@ -602,39 +650,6 @@
       return `${year}-W${month}-${day}`;
     }
 
-    async function initFirebase() {
-      try {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-          ? JSON.parse(__firebase_config) 
-          : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
-
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUser = user;
-            updateSyncBadge('online');
-            subscribeToWeekData();
-            subscribeToHabits();
-          }
-        });
-
-      } catch (err) {
-        console.warn("Firebase fall back to local mode:", err);
-        updateSyncBadge('local');
-        loadLocalDemoData();
-      }
-    }
-
     function updateSyncBadge(status) {
       const badge = document.getElementById('sync-status');
       if (!badge) return;
@@ -643,78 +658,45 @@
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot-warm"></span><span>Sincronizado</span>`;
       } else {
         badge.className = 'inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80';
-        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Modo Local</span>`;
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Sin conexión</span>`;
       }
     }
 
-    function subscribeToWeekData() {
-      if (!currentUser || !db) return;
-      
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
-      const weekKey = formatWeekRangeKey(currentWeekStartDate);
-      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'weeks', weekKey);
-
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          tasks = data.tasks || [];
-          document.getElementById('weekly-notes').value = data.notes || '';
-        } else {
-          tasks = getDemoSeedTasks();
-          saveWeekToDatabase();
-        }
-        renderBoard();
-      }, (error) => {
-        console.error("Firestore error:", error);
-      });
+    function mapSupabaseTask(row) {
+      return {
+        ...row,
+        title: row.text || '',
+        description: row.description || '',
+        time: row.time || ''
+      };
     }
 
-    function subscribeToHabits() {
-      if (!currentUser || !db) return;
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
-      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'habits');
+    async function loadWeekTasks() {
+      currentWeekId = formatWeekRangeKey(currentWeekStartDate);
+      const { data, error } = await window.supabaseClient
+        .from('dashboard_tasks')
+        .select('*')
+        .eq('week_id', currentWeekId);
 
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          habits = docSnap.data().list || DEFAULT_HABITS;
-        } else {
-          habits = DEFAULT_HABITS;
-          setDoc(docRef, { list: habits });
-        }
-        renderHabits();
-      }, (error) => {
-        console.error("Habits firestore error:", error);
-      });
-    }
-
-    async function saveWeekToDatabase() {
-      if (!currentUser || !db) return;
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
-      const weekKey = formatWeekRangeKey(currentWeekStartDate);
-      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'weeks', weekKey);
-      
-      const notes = document.getElementById('weekly-notes').value;
-
-      try {
-        await setDoc(docRef, {
-          updatedAt: new Date().toISOString(),
-          tasks: tasks,
-          notes: notes
-        }, { merge: true });
-      } catch (err) {
-        showToast("Error al conectar con la base de datos", "error");
+      if (error) {
+        console.error('Error al cargar tareas:', error);
+        updateSyncBadge('offline');
+        showToast('No se pudieron cargar los objetivos', 'error');
+        return;
       }
+
+      tasks = (data || []).map(mapSupabaseTask);
+      updateSyncBadge('online');
+      renderBoard();
     }
 
-    async function saveHabitsToDatabase() {
-      if (!currentUser || !db) return;
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'aura-dashboard-default';
-      const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'habits');
-      try {
-        await setDoc(docRef, { list: habits });
-      } catch (err) {
-        console.error(err);
-      }
+    async function updateTask(taskId, values) {
+      const { error } = await window.supabaseClient
+        .from('dashboard_tasks')
+        .update(values)
+        .eq('id', taskId);
+
+      if (error) throw error;
     }
 
     function getDemoSeedTasks() {
@@ -770,13 +752,6 @@
           completed: false
         }
       ];
-    }
-
-    function loadLocalDemoData() {
-      tasks = getDemoSeedTasks();
-      habits = DEFAULT_HABITS;
-      renderBoard();
-      renderHabits();
     }
 
     window.renderBoard = function() {
@@ -976,17 +951,23 @@
       }
       habits[habitIndex].completedDays[dayIndex] = !habits[habitIndex].completedDays[dayIndex];
       renderHabits();
-      saveHabitsToDatabase();
       showToast("Hábito actualizado", "success");
     };
 
-    window.toggleTaskComplete = function(taskId) {
+    window.toggleTaskComplete = async function(taskId) {
       const task = tasks.find(t => t.id === taskId);
       if (task) {
         task.completed = !task.completed;
         renderBoard();
-        saveWeekToDatabase();
-        showToast(task.completed ? "¡Objetivo cumplido! 🎉" : "Objetivo pendiente", "info");
+        try {
+          await window.toggleTaskStatus(task.id, task.completed);
+          showToast(task.completed ? "¡Objetivo cumplido! 🎉" : "Objetivo pendiente", "info");
+        } catch (error) {
+          task.completed = !task.completed;
+          renderBoard();
+          console.error('Error al actualizar:', error);
+          showToast("No se pudo actualizar el objetivo", "error");
+        }
       }
     };
 
@@ -1033,7 +1014,7 @@
       }, 200);
     };
 
-    window.handleTaskSubmit = function(e) {
+    window.handleTaskSubmit = async function(e) {
       e.preventDefault();
 
       const taskId = document.getElementById('task-id').value;
@@ -1046,35 +1027,21 @@
 
       if (!title) return;
 
-      if (taskId) {
-        const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          task.title = title;
-          task.description = description;
-          task.day = day;
-          task.category = category;
-          task.priority = priority;
-          task.time = time;
+      try {
+        if (taskId) {
+          await updateTask(taskId, { day, text: title, category, priority });
+          showToast("Objetivo actualizado", "success");
+        } else {
+          await window.addTask(currentWeekId, day, title, category, priority);
+          showToast("Objetivo guardado con éxito", "success");
         }
-        showToast("Objetivo actualizado", "success");
-      } else {
-        const newTask = {
-          id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-          title,
-          description,
-          day,
-          category,
-          priority,
-          time,
-          completed: false
-        };
-        tasks.push(newTask);
-        showToast("Objetivo guardado con éxito", "success");
-      }
 
-      closeTaskModal();
-      renderBoard();
-      saveWeekToDatabase();
+        closeTaskModal();
+        await loadWeekTasks();
+      } catch (error) {
+        console.error('Error al guardar:', error);
+        showToast("No se pudo guardar el objetivo", "error");
+      }
     };
 
     window.editTask = function(taskId) {
@@ -1084,22 +1051,26 @@
       }
     };
 
-    window.deleteTask = function(taskId) {
-      tasks = tasks.filter(t => t.id !== taskId);
-      renderBoard();
-      saveWeekToDatabase();
-      showToast("Objetivo eliminado", "info");
+    window.deleteTask = async function(taskId) {
+      try {
+        await window.deleteSupabaseTask(taskId);
+        await loadWeekTasks();
+        showToast("Objetivo eliminado", "info");
+      } catch (error) {
+        console.error('Error al borrar:', error);
+        showToast("No se pudo eliminar el objetivo", "error");
+      }
     };
 
     window.navigateWeek = function(offset) {
       currentWeekStartDate.setDate(currentWeekStartDate.getDate() + (offset * 7));
-      subscribeToWeekData();
+      loadWeekTasks();
       showToast(`Cargando semana...`, "info");
     };
 
     window.resetToCurrentWeek = function() {
       currentWeekStartDate = getMonday(new Date());
-      subscribeToWeekData();
+      loadWeekTasks();
       showToast("Volviendo a la semana actual", "info");
     };
 
@@ -1137,7 +1108,6 @@
 
       clearTimeout(notesTimeout);
       notesTimeout = setTimeout(() => {
-        saveWeekToDatabase();
         indicator.style.opacity = '1';
         setTimeout(() => {
           indicator.style.opacity = '0';
@@ -1184,14 +1154,18 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initFirebase();
+      habits = DEFAULT_HABITS.map(habit => ({
+        ...habit,
+        completedDays: [...habit.completedDays]
+      }));
+      renderHabits();
+      loadWeekTasks();
       if (window.lucide) {
         lucide.createIcons();
       }
     });
 
-    const GEMINI_MODEL = "gemini-3-flash-preview";
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=`;
+    const GEMINI_API_URL = 'http://localhost:3000/api/gemini';
 
     async function callGeminiAPI(payload, retries = 3, backoff = 1000) {
       for (let i = 0; i < retries; i++) {
@@ -1317,13 +1291,17 @@ Asigna categorías válidas: Trabajo, Estudio, Salud, Finanzas, Personal. Priori
         }));
 
         if (mode === 'replace') {
-          tasks = formattedNewTasks;
-        } else {
-          tasks = [...tasks, ...formattedNewTasks];
+          const { error: deleteError } = await window.supabaseClient
+            .from('dashboard_tasks')
+            .delete()
+            .eq('week_id', currentWeekId);
+          if (deleteError) throw deleteError;
         }
 
-        renderBoard();
-        saveWeekToDatabase();
+        await Promise.all(formattedNewTasks.map(task =>
+          window.addTask(currentWeekId, task.day, task.title, task.category, task.priority)
+        ));
+        await loadWeekTasks();
         closeAIPlannerModal();
         showToast(`✨ ¡Plan generado! (${formattedNewTasks.length} tareas asignadas)`, "success");
 
